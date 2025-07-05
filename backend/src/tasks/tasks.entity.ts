@@ -1,4 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Project } from 'src/projects/projects.entity';
+import { User } from 'src/users/users.entity';
 
 @Entity()
 export class Task {
@@ -15,11 +17,19 @@ export class Task {
   dateFin: Date;
 
   @Column()
-  statut: string;  // en cours, terminée, en retard
+  statut: string;
 
   @Column()
   priorite: string;
 
   @Column()
   specialite: string;
+
+  @ManyToOne(() => Project, (project) => project.tasks)
+  projet: Project;
+
+  
+  @ManyToOne(() => User, (user) => user.tachesAssignees, { eager: true })
+  membre: User;
+
 }

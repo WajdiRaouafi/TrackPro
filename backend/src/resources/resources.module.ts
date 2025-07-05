@@ -4,9 +4,10 @@ import { ResourcesController } from './resources.controller';
 import { ResourcesService } from './resources.service';
 import { Equipement } from './equipement.entity';
 import { Materiau } from './materiau.entity';
+import { Project } from 'src/projects/projects.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Equipement, Materiau])],
+  imports: [TypeOrmModule.forFeature([Equipement, Materiau, Project])],
   controllers: [ResourcesController],
   providers: [ResourcesService],
   exports: [ResourcesService], // optionnel : si un autre module utilise le service

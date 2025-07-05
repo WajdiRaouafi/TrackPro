@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Project } from 'src/projects/projects.entity';
 
 @Entity()
 export class Materiau {
@@ -16,4 +17,7 @@ export class Materiau {
 
   @Column()
   stockMinimum: number;
+
+  @ManyToOne(() => Project, (project) => project.materiaux)
+  projet: Project;
 }

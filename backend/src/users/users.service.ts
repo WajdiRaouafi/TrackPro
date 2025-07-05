@@ -11,14 +11,23 @@ export class UsersService {
     private readonly userRepository: Repository<User>
   ) {}
 
-  async create(userData: Partial<User>) {
-    if (!userData.password) {
-      throw new BadRequestException('Password is required');
-    }
-    userData.password = await bcrypt.hash(userData.password, 10);
-    const user = this.userRepository.create(userData);
-    return this.userRepository.save(user);
+ async create(data: Partial<User>): Promise<User> {
+  if (!data.email || !data.password || !data.role) {
+    throw new BadRequestException('Email, mot de passe et rôle sont requis.');
   }
+
+  const existing = await this.userRepository.findOneBy({ email: data.email });
+  if (existing) {
+    throw new BadRequestException(`Un utilisateur avec l'email "${data.email}" existe déjà.`);
+  }
+
+  data.password = await bcrypt.hash(data.password, 10);
+
+  const user = this.userRepository.create(data);
+  return this.userRepository.save(user);
+}
+
+
 
   findAll() {
     return this.userRepository.find();

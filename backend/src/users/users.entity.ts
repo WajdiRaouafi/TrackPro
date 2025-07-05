@@ -1,4 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Project } from 'src/projects/projects.entity';
+import { Task } from 'src/tasks/tasks.entity';
 
 export enum UserRole {
   ADMIN = 'ADMIN',
@@ -27,6 +29,14 @@ export class User {
 
   @Column({ default: true })
   isActive: boolean;
+
+
+  @OneToMany(() => Project, (project) => project.chefProjet)
+  projets: Project[];
+
+  @OneToMany(() => Task, (task) => task.membre)
+  tachesAssignees: Task[];
+
 }
 
 

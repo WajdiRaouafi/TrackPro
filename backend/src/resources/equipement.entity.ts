@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Project } from 'src/projects/projects.entity';
 
 @Entity()
 export class Equipement {
@@ -15,5 +16,8 @@ export class Equipement {
   numeroSerie: string;
 
   @Column()
-  statut: string;  // disponible, panne, maintenance
+  statut: string;
+
+  @ManyToOne(() => Project, (project) => project.equipements)
+  projet: Project;
 }
