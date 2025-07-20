@@ -1,0 +1,72 @@
+# version: '3.8'
+
+# services:
+#   backend:
+#     container_name: trackpro-backend
+#     build: .
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       - DB_HOST=db
+#       - DB_PORT=5432
+#       - DB_USERNAME=postgres
+#       - DB_PASSWORD=password
+#       - DB_DATABASE=trackpro
+#     depends_on:
+#       - db
+#     volumes:
+#       - .:/usr/src/app
+#     command: npm run start:dev
+
+#   db:
+#     image: postgres:14
+#     container_name: trackpro-db
+#     ports:
+#       - "5432:5432"
+#     environment:
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: password
+#       POSTGRES_DB: trackpro
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+
+# volumes:
+#   postgres_data:
+
+
+version: '3.3'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: trackpro
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://postgres:password@db:5432/trackpro
+    volumes:
+      - ./backend:/app
+    command: npm run start:dev
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+
+volumes:
+  db-data:
+
