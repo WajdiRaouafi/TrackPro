@@ -39,4 +39,13 @@ export class Project {
   @OneToMany(() => Materiau, (materiau) => materiau.projet)
   materiaux: Materiau[];
 
+  // @ManyToMany(() => Materiau, { eager: true })
+  // @JoinTable()
+  // materiaux: Materiau[];
+
+  // @ManyToMany(() => Equipement, { eager: true })
+  // @JoinTable()
+  // equipements: Equipement[];
+
+
 }

@@ -9,10 +9,21 @@ export enum UserRole {
   GESTIONNAIRE_RESSOURCES = 'GESTIONNAIRE_RESSOURCES',
 }
 
+
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
+
+@Column({ nullable: true })
+nom: string;
+
+@Column({ nullable: true })
+prenom: string;
+
+@Column({ nullable: true })
+telephone: string;
+
 
   @Column()
   email: string;
@@ -30,14 +41,10 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
-
   @OneToMany(() => Project, (project) => project.chefProjet)
   projets: Project[];
 
   @OneToMany(() => Task, (task) => task.membre)
   tachesAssignees: Task[];
-
 }
-
-
 
