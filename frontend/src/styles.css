@@ -1,0 +1,10 @@
+@import "rsuite/dist/rsuite.css";
+
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+}
+
+#root {
+  padding: 0;
+}
