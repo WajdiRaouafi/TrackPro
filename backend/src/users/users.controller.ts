@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete,UseGuards,Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Put, Delete,UseGuards,Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './users.entity';
-import { CreateUserDto } from './dto/create-user.dto'; // Assurez-vous que ce DTO est créé pour la validation des données d'entrée
+import { CreateUserDto } from './dto/create-user.dto'; 
+import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 @Controller('users')
 export class UsersController {
@@ -46,4 +47,12 @@ updateOwnProfile(@Request() req, @Body() data: Partial<User>) {
   remove(@Param('id') id: number) {
     return this.usersService.remove(id);
   }
+
+@Put(':id')
+updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  return this.usersService.update(+id, updateUserDto);
+}
+
+
+
 }

@@ -1,7 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './users.entity';
+import { UpdateUserDto } from './dto/update-user.dto';
+
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -41,13 +43,22 @@ export class UsersService {
     return this.userRepository.findOneBy({ email });
   }
 
-  async update(id: number, userData: Partial<User>) {
-    if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, 10);
-    }
-    await this.userRepository.update(id, userData);
-    return this.findOne(id);
-  }
+  // async update(id: number, userData: Partial<User>) {
+  //   if (userData.password) {
+  //     userData.password = await bcrypt.hash(userData.password, 10);
+  //   }
+  //   await this.userRepository.update(id, userData);
+  //   return this.findOne(id);
+  // }
+
+
+  async update(id: number, data: UpdateUserDto): Promise<User> {
+  const user = await this.userRepository.findOneBy({ id });
+  if (!user) throw new NotFoundException('Utilisateur introuvable');
+  Object.assign(user, data);
+  return this.userRepository.save(user);
+}
+
 
   remove(id: number) {
     return this.userRepository.delete(id);

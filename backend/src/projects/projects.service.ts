@@ -51,10 +51,18 @@ export class ProjectsService {
     return this.projectRepository.findOneBy({ id });
   }
 
+  // async update(id: number, data: Partial<Project>) {
+  //   await this.projectRepository.update(id, data);
+  //   return this.findOne(id);
+  // }
   async update(id: number, data: Partial<Project>) {
-    await this.projectRepository.update(id, data);
-    return this.findOne(id);
-  }
+  // Exclure les relations OneToMany
+  const { tasks, equipements, materiaux, ...projectData } = data;
+
+  await this.projectRepository.update(id, projectData);
+  return this.findOne(id);
+}
+
 
   findAllWithTeam() {
   return this.projectRepository.find({
