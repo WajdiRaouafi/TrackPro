@@ -48,6 +48,7 @@ export default function Dashboard() {
       if (isAdmin) await loadUserStats();
     };
     init();
+    // eslint-disable-next-line
   }, [isAdmin]);
 
   return (
