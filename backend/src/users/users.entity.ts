@@ -38,9 +38,12 @@ telephone: string;
   })
   role: UserRole;
 
-  @Column({ default: true })
+  @Column({ default: false })
   isActive: boolean;
-
+  
+  @Column({ nullable: true })
+  photoUrl: string;
+  
   @OneToMany(() => Project, (project) => project.chefProjet)
   projets: Project[];
 
