@@ -1,139 +1,275 @@
-import React, { useEffect, useState } from 'react';
-import { getUsers, toggleUserStatus, deleteUser } from '../api/users';
-import { toast } from 'react-toastify';
-import { MDBBadge } from 'mdb-react-ui-kit';
-import { useNavigate } from 'react-router-dom';
-import { FaEdit, FaTrash, FaToggleOn, FaToggleOff } from 'react-icons/fa';
-import '../App.css';
+import React, { useEffect, useState } from "react";
+import {
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  IconButton,
+  Paper,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { FaEdit, FaTrash } from "react-icons/fa";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { getUsers, toggleUserStatus, deleteUser } from "../api/users";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const formatRole = (role) => {
   switch (role) {
-    case 'ADMIN': return 'Administrateur';
-    case 'CHEF_PROJET': return 'Chef de projet';
-    case 'MEMBRE_EQUIPE': return 'Membre de l’équipe';
-    case 'GESTIONNAIRE_RESSOURCES': return 'Gestionnaire de ressources';
-    default: return role;
+    case "ADMIN":
+      return "Administrateur";
+    case "CHEF_PROJET":
+      return "Chef de projet";
+    case "MEMBRE_EQUIPE":
+      return "Membre de l’équipe";
+    case "GESTIONNAIRE_RESSOURCES":
+      return "Gestionnaire de ressources";
+    default:
+      return role;
   }
 };
 
 export default function AdminUserPage() {
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+
   const navigate = useNavigate();
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:3000";
 
   useEffect(() => {
     loadUsers();
   }, []);
 
+  useEffect(() => {
+    const filtered = users.filter(
+      (user) =>
+        `${user.nom} ${user.prenom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        formatRole(user.role).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredUsers(filtered);
+  }, [searchTerm, users]);
+
   const loadUsers = () => {
     getUsers()
-      .then(res => setUsers(res.data))
+      .then((res) => {
+        setUsers(res.data);
+        setFilteredUsers(res.data);
+      })
       .catch(() => toast.error("Erreur lors du chargement des utilisateurs"));
   };
+
+  const handleEdit = (id) => navigate(`/admin/users/edit/${id}`);
 
   const handleToggle = async (user) => {
     try {
       await toggleUserStatus(user.id, !user.isActive);
-      toast.success(`Utilisateur ${user.email} ${user.isActive ? 'désactivé' : 'activé'} ✅`);
-      setUsers(prev =>
-        prev.map(u =>
-          u.id === user.id ? { ...u, isActive: !user.isActive } : u
-        )
+      toast.success(`Utilisateur ${user.email} ${user.isActive ? "désactivé" : "activé"} ✅`);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, isActive: !user.isActive } : u))
       );
     } catch (error) {
       toast.error("Erreur lors de la mise à jour");
     }
   };
 
-  const handleEdit = (id) => {
-    navigate(`/admin/users/edit/${id}`);
+  const confirmDeleteUser = (user) => {
+    setUserToDelete(user);
+    setOpenConfirmDialog(true);
   };
 
-  const handleDelete = async (user) => {
-    if (window.confirm(`Confirmer la suppression de ${user.prenom} ${user.nom} ?`)) {
-      try {
-        await deleteUser(user.id);
-        toast.success("Utilisateur supprimé ✅");
-        loadUsers();
-      } catch (error) {
-        toast.error("Erreur lors de la suppression");
-      }
+  const handleDeleteConfirmed = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteUser(userToDelete.id);
+      toast.success("Utilisateur supprimé ✅");
+      loadUsers();
+    } catch (error) {
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setOpenConfirmDialog(false);
+      setUserToDelete(null);
     }
   };
 
+  const handleChangePage = (event, newPage) => setPage(newPage);
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(+event.target.value);
+    setPage(0);
+  };
+
+  const exportToExcel = () => {
+    const data = filteredUsers.map((user) => ({
+      Nom: user.nom,
+      Prénom: user.prenom,
+      Email: user.email,
+      Rôle: formatRole(user.role),
+      Statut: user.isActive ? "Actif" : "Inactif",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Utilisateurs");
+
+    XLSX.writeFile(workbook, "utilisateurs.xlsx");
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+
+    autoTable(doc, {
+      head: [["Nom", "Prénom", "Email", "Rôle", "Statut"]],
+      body: filteredUsers.map((user) => [
+        user.nom,
+        user.prenom,
+        user.email,
+        formatRole(user.role),
+        user.isActive ? "Actif" : "Inactif",
+      ]),
+    });
+
+    doc.save("utilisateurs.pdf");
+  };
+
   return (
-    <div className="container py-4">
-      <div className="card shadow-lg border-0">
-        <div className="card-header bg-primary text-white">
-          <h4 className="mb-0">Gestion des Utilisateurs</h4>
-        </div>
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table table-hover mb-0 align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th>Utilisateur</th>
-                  <th>Rôle</th>
-                  <th>Statut</th>
-                  <th className="text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(user => (
-                  <tr key={user.id}>
-                    <td>
-                      <div className="d-flex align-items-center">
-                        <img
-                          src="https://mdbootstrap.com/img/new/avatars/2.jpg"
-                          alt="avatar"
-                          className="rounded-circle"
-                          width="45"
-                          height="45"
+    <Paper sx={{ width: "100%", overflow: "hidden", padding: 2 }}>
+      <Typography variant="h5" gutterBottom>
+        👥 Liste des utilisateurs
+      </Typography>
+      <Box display="flex" justifyContent="flex-end" alignItems="center" mb={2}>
+        <Box display="flex" gap={1}>
+          <TextField
+            label="Rechercher..."
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ width: 250 }}
+          />
+          <Button onClick={exportToExcel} variant="outlined" color="success">
+            Export Excel
+          </Button>
+          <Button onClick={exportToPDF} variant="outlined" color="error">
+            Export PDF
+          </Button>
+        </Box>
+      </Box>
+
+      <TableContainer sx={{ maxHeight: 520 }}>
+        <Table stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>Utilisateur</TableCell>
+              <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>Email</TableCell>
+              <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>Rôle</TableCell>
+              <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>Statut</TableCell>
+              <TableCell align="center" sx={{ fontWeight: "bold", fontSize: "1rem" }}>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredUsers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  Aucun utilisateur trouvé.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredUsers
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((user) => (
+                  <TableRow key={user.id} hover>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Avatar
+                          src={
+                            user.photoUrl
+                              ? `${BACKEND_URL}${user.photoUrl}`
+                              : "https://mdbootstrap.com/img/new/avatars/2.jpg"
+                          }
+                          alt={user.nom}
                         />
-                        <div className="ms-3">
-                          <h6 className="mb-0">
-                            {user.nom && user.prenom ? `${user.nom} ${user.prenom}` : 'Nom inconnu'}
-                          </h6>
-                          <small className="text-muted">{user.email}</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{formatRole(user.role)}</td>
-                    <td>
-                      <MDBBadge color={user.isActive ? 'success' : 'secondary'} pill>
-                        {user.isActive ? 'Actif' : 'Inactif'}
-                      </MDBBadge>
-                    </td>
-                    <td className="text-center">
-                      <div className="d-flex justify-content-center gap-2">
-                        <button className="btn btn-warning btn-sm" onClick={() => handleEdit(user.id)}>
-                          <FaEdit className="me-1" /> Modifier
-                        </button>
-                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(user)}>
-                          <FaTrash className="me-1" /> Supprimer
-                        </button>
-                        <button
-                          className={`btn btn-sm ${user.isActive ? 'btn-secondary' : 'btn-success'}`}
-                          onClick={() => handleToggle(user)}
-                        >
-                          {user.isActive ? <FaToggleOff className="me-1" /> : <FaToggleOn className="me-1" />}
-                          {user.isActive ? 'Désactiver' : 'Activer'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {users.length === 0 && (
-                  <tr>
-                    <td colSpan="4" className="text-center py-4 text-muted">
-                      Aucun utilisateur trouvé.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+                        <Box>
+                          <Typography fontWeight="bold">
+                            {user.nom} {user.prenom}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{formatRole(user.role)}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={user.isActive ? "Actif" : "Inactif"}
+                        color={user.isActive ? "success" : "default"}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <IconButton onClick={() => handleEdit(user.id)} color="warning">
+                        <FaEdit />
+                      </IconButton>
+                      <IconButton onClick={() => confirmDeleteUser(user)} color="error">
+                        <FaTrash />
+                      </IconButton>
+                      <Switch
+                        checked={user.isActive}
+                        onChange={() => handleToggle(user)}
+                        color="primary"
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <TablePagination
+        component="div"
+        rowsPerPageOptions={[5, 10, 25]}
+        count={filteredUsers.length}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
+
+      <Dialog open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)}>
+        <Box p={3}>
+          <Typography variant="h6" gutterBottom>
+            Confirmer la suppression
+          </Typography>
+          <Typography mb={2}>
+            Êtes-vous sûr de vouloir supprimer
+            <strong> {userToDelete?.nom} {userToDelete?.prenom}</strong> ?
+          </Typography>
+          <Box display="flex" justifyContent="flex-end" gap={1}>
+            <Button onClick={() => setOpenConfirmDialog(false)} color="inherit">
+              Annuler
+            </Button>
+            <Button onClick={handleDeleteConfirmed} color="error" variant="contained">
+              Supprimer
+            </Button>
+          </Box>
+        </Box>
+      </Dialog>
+    </Paper>
   );
 }

@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { getProjects } from '../api/projects';
-import { getUsers } from '../api/users';
-import { useNavigate } from 'react-router-dom';
-import { Card, Row, Col, Container } from 'react-bootstrap';
+import React, { useEffect, useState } from "react";
+import { getProjects } from "../api/projects";
+import { getUsers } from "../api/users";
+import { useNavigate } from "react-router-dom";
+import { Card, Row, Col, Container } from "react-bootstrap";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [userStats, setUserStats] = useState({ total: 0, actifs: 0 });
   const navigate = useNavigate();
 
-  const user = JSON.parse(localStorage.getItem('user'));
-  const role = localStorage.getItem('role');
-  const isAdmin = role === 'ADMIN';
-  const isChefProjet = role === 'CHEF_PROJET';
+  const user = JSON.parse(localStorage.getItem("user"));
+  const role = localStorage.getItem("role");
+  const isAdmin = role === "ADMIN";
+  const isChefProjet = role === "CHEF_PROJET";
 
   const loadProjects = async () => {
     try {
@@ -61,7 +61,7 @@ export default function Dashboard() {
             <Card bg="primary" text="white">
               <Card.Body>
                 <Card.Title>Utilisateurs totaux</Card.Title>
-                <Card.Text style={{ fontSize: '1.5rem' }}>
+                <Card.Text style={{ fontSize: "1.5rem" }}>
                   {userStats.total}
                 </Card.Text>
               </Card.Body>
@@ -71,7 +71,7 @@ export default function Dashboard() {
             <Card bg="success" text="white">
               <Card.Body>
                 <Card.Title>Utilisateurs actifs</Card.Title>
-                <Card.Text style={{ fontSize: '1.5rem' }}>
+                <Card.Text style={{ fontSize: "1.5rem" }}>
                   {userStats.actifs}
                 </Card.Text>
               </Card.Body>
@@ -81,7 +81,7 @@ export default function Dashboard() {
             <Card bg="info" text="white">
               <Card.Body>
                 <Card.Title>Projets totaux</Card.Title>
-                <Card.Text style={{ fontSize: '1.5rem' }}>
+                <Card.Text style={{ fontSize: "1.5rem" }}>
                   {projects.length}
                 </Card.Text>
               </Card.Body>
@@ -97,7 +97,7 @@ export default function Dashboard() {
             <Card
               className="shadow"
               onClick={() => navigate(`/projects/${project.id}`)}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: "pointer" }}
             >
               <Card.Body>
                 <Card.Title>{project.nom}</Card.Title>
