@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ResourcesModule } from './resources/resources.module';
+import { GptModule } from './gpt/gpt.module'; // ✅ Import du module GPT
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ResourcesModule } from './resources/resources.module';
     ProjectsModule,
     TasksModule,
     ResourcesModule,
+    GptModule
   ],
   controllers: [AppController],
   providers: [AppService],

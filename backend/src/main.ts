@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import * as dotenv from 'dotenv';
+
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -11,6 +13,7 @@ async function bootstrap() {
     origin: 'http://localhost:3001',
     credentials: true,
   });
+dotenv.config();
 
   // ✅ Servir les fichiers statiques (uploads d'images, etc.)
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
