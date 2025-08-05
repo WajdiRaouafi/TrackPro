@@ -30,6 +30,7 @@ export default function SidebarLayout() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("email");
+    localStorage.removeItem('chatbot_messages'); // ✅ supprime l’historique du chatbot
     navigate("/login");
   };
 

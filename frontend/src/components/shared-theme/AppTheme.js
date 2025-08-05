@@ -1,13 +1,13 @@
-import * as React from 'react';
-import PropTypes from 'prop-types';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import * as React from "react";
+import PropTypes from "prop-types";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 
-import { inputsCustomizations } from './customizations/inputs';
-import { dataDisplayCustomizations } from './customizations/dataDisplay';
-import { feedbackCustomizations } from './customizations/feedback';
-import { navigationCustomizations } from './customizations/navigation';
-import { surfacesCustomizations } from './customizations/surfaces';
-import {  typography, shadows, shape } from './themePrimitives';
+import { inputsCustomizations } from "./customizations/inputs";
+import { dataDisplayCustomizations } from "./customizations/dataDisplay";
+import { feedbackCustomizations } from "./customizations/feedback";
+import { navigationCustomizations } from "./customizations/navigation";
+import { surfacesCustomizations } from "./customizations/surfaces";
+import { typography, shadows, shape } from "./themePrimitives";
 
 function AppTheme(props) {
   const { children, disableCustomTheme, themeComponents } = props;
@@ -15,31 +15,26 @@ function AppTheme(props) {
     return disableCustomTheme
       ? {}
       : createTheme({
-  palette: {
-    mode: 'light',
-  },
-  typography,
-  shadows,
-  shape,
-  components: {
-    ...inputsCustomizations,
-    ...dataDisplayCustomizations,
-    ...feedbackCustomizations,
-    ...navigationCustomizations,
-    ...surfacesCustomizations,
-    ...themeComponents,
-  },
-});
-
+          palette: {
+            mode: "light",
+          },
+          typography,
+          shadows,
+          shape,
+          components: {
+            ...inputsCustomizations,
+            ...dataDisplayCustomizations,
+            ...feedbackCustomizations,
+            ...navigationCustomizations,
+            ...surfacesCustomizations,
+            ...themeComponents,
+          },
+        });
   }, [disableCustomTheme, themeComponents]);
   if (disableCustomTheme) {
     return <React.Fragment>{children}</React.Fragment>;
   }
-  return (
-    <ThemeProvider theme={theme} disableTransitionOnChange>
-      {children}
-    </ThemeProvider>
-  );
+  return <ThemeProvider theme={theme}>{children}</ThemeProvider>;
 }
 
 AppTheme.propTypes = {

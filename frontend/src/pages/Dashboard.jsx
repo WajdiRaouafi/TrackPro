@@ -3,12 +3,12 @@ import { getProjects } from "../api/projects";
 import { getUsers } from "../api/users";
 import { useNavigate } from "react-router-dom";
 import { Card, Row, Col, Container } from "react-bootstrap";
+import ChatbotWidget from "../components/chatbot/ChatbotWidget";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [userStats, setUserStats] = useState({ total: 0, actifs: 0 });
   const navigate = useNavigate();
-
   const user = JSON.parse(localStorage.getItem("user"));
   const role = localStorage.getItem("role");
   const isAdmin = role === "ADMIN";
@@ -89,6 +89,7 @@ export default function Dashboard() {
           </Col>
         </Row>
       )}
+      <ChatbotWidget />
 
       <h4 className="mb-3">Liste des Projets</h4>
       <Row>

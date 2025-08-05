@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { createProject, getProject, updateProject } from '../../api/projects';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUsers } from '../../api/users';
+import ChatbotWidget from '../../components/chatbot/ChatbotWidget';
+
 
 export default function ProjectForm() {
   const [form, setForm] = useState({
@@ -94,8 +96,11 @@ export default function ProjectForm() {
   };
 
   return (
+    
     <div className="container mt-4" style={{ maxWidth: '600px' }}>
       <h3>{id ? '✏️ Modifier le projet' : '➕ Créer un projet'}</h3>
+            <ChatbotWidget />
+
       <form onSubmit={handleSubmit}>
         {['nom', 'description', 'adresse'].map(field => (
           <div className="mb-3" key={field}>
