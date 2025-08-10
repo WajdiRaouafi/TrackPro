@@ -21,7 +21,7 @@ export class GptController {
 
   @Post('ask')
   async ask(@Body() body: { prompt: string }) {
-    console.log('🧾 Question reçue :', body);
+    // console.log('🧾 Question reçue :', body);
     const response = await this.gptService.ask(body.prompt);
     return { response };
   }

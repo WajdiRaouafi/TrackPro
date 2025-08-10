@@ -1,9 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Project } from './projects.entity';
-import { BadRequestException } from '@nestjs/common/exceptions';
-import { User } from 'src/users/users.entity';
+import { Project } from './entities/projects.entity';
+import { User, UserRole } from 'src/users/entities/users.entity';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -15,21 +20,13 @@ export class ProjectsService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  // create(data: Partial<Project>) {
-  //   const project = this.projectRepository.create(data);
-  //   return this.projectRepository.save(project);
-  // }
-  async create(data: Partial<Project>): Promise<Project> {
-    const userId =
-      typeof data.chefProjet === 'object'
-        ? data.chefProjet.id
-        : data.chefProjet;
+  // ✅ Créer un projet
+  async create(data: CreateProjectDto): Promise<Project> {
+    const user = await this.userRepository.findOneBy({ id: data.chefProjetId });
 
-    const user = await this.userRepository.findOneBy({ id: userId });
-
-    if (!user || user.role !== 'CHEF_PROJET') {
+    if (!user || user.role !== UserRole.CHEF_PROJET) {
       throw new BadRequestException(
-        'Seuls les utilisateurs ayant le rôle CHEF_PROJET peuvent être chef de projet',
+        'Seuls les chefs de projet peuvent être assignés.',
       );
     }
 
@@ -37,44 +34,88 @@ export class ProjectsService {
       ...data,
       chefProjet: user,
     });
+
+    const savedProject = await this.projectRepository.save(project);
+
+    // 🛠️ Associer les équipements s'ils sont fournis
+    if (data.equipementIds?.length) {
+      await this.projectRepository.manager
+        .createQueryBuilder()
+        .update('equipement')
+        .set({ projet: savedProject })
+        .whereInIds(data.equipementIds)
+        .execute();
+    }
+
+    // 🛠️ Associer les matériaux s'ils sont fournis
+    if (data.materiauIds?.length) {
+      await this.projectRepository.manager
+        .createQueryBuilder()
+        .update('materiau')
+        .set({ projet: savedProject })
+        .whereInIds(data.materiauIds)
+        .execute();
+    }
+
+    return savedProject;
+  }
+
+  // ✅ Trouver tous les projets
+ async findAll(): Promise<Project[]> {
+  return this.projectRepository.find({
+    relations: ['chefProjet', 'tasks', 'tasks.membre', 'equipements'],
+  });
+}
+
+
+  // ✅ Trouver tous les projets (version utilisée avec DTOs)
+  async findAllWithTeam(): Promise<Project[]> {
+    return this.findAll();
+  }
+
+  // ✅ Trouver un projet par ID
+  async findOne(id: number): Promise<Project> {
+    const project = await this.projectRepository.findOne({
+      where: { id },
+      relations: ['chefProjet', 'tasks', 'tasks.membre', 'equipements'],
+    });
+
+    if (!project) throw new NotFoundException('Projet introuvable');
+    return project;
+  }
+
+  // ✅ Mise à jour
+  async update(id: number, data: UpdateProjectDto): Promise<Project> {
+    const project = await this.findOne(id);
+    if (!project) throw new NotFoundException('Projet introuvable');
+
+    // Si un nouveau chef de projet est défini
+    if (data.chefProjetId) {
+      const user = await this.userRepository.findOneBy({
+        id: data.chefProjetId,
+      });
+
+      if (!user || user.role !== UserRole.CHEF_PROJET) {
+        throw new BadRequestException(
+          'Le nouveau chef de projet doit avoir le rôle CHEF_PROJET.',
+        );
+      }
+
+      project.chefProjet = user;
+    }
+
+    Object.assign(project, data);
     return this.projectRepository.save(project);
   }
 
-  // findAll() {
-  //   return this.projectRepository.find();
-  // }
-
-  findAll() {
-    return this.projectRepository.find({
-      relations: ['chefProjet', 'tasks', 'tasks.membre'],
-    });
-  }
-
-  findOne(id: number) {
-    return this.projectRepository.findOneBy({ id });
-  }
-
-  // async update(id: number, data: Partial<Project>) {
-  //   await this.projectRepository.update(id, data);
-  //   return this.findOne(id);
-  // }
-  async update(id: number, data: Partial<Project>) {
-    // Exclure les relations OneToMany
-    const { tasks, equipements, materiaux, ...projectData } = data;
-
-    await this.projectRepository.update(id, projectData);
-    return this.findOne(id);
-  }
-
-  findAllWithTeam() {
-    return this.projectRepository.find({
-      relations: ['chefProjet', 'tasks', 'tasks.membre'],
-    });
-  }
-
-  remove(id: number) {
+  // ✅ Supprimer un projet
+  async remove(id: number) {
+    const project = await this.findOne(id);
+    if (!project) throw new NotFoundException('Projet introuvable');
     return this.projectRepository.delete(id);
   }
+
+  // ✅ Nombre total de projets
   async countProjects(): Promise<number> {
     return this.projectRepository.count();
   }

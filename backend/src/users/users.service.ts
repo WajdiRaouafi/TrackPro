@@ -4,10 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './users.entity';
+import { Repository , IsNull} from 'typeorm';
+import { User, UserRole } from './entities/users.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
-
+import { plainToInstance } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -29,40 +29,64 @@ export class UsersService {
       );
     }
 
+    if (data.role === UserRole.MEMBRE_EQUIPE && !data.salaireJournalier) {
+      throw new BadRequestException(
+        "Le salaire journalier est requis pour les membres d'équipe.",
+      );
+    }
+
     data.password = await bcrypt.hash(data.password, 10);
-
     const user = this.userRepository.create(data);
-    return this.userRepository.save(user);
+    const saved = await this.userRepository.save(user);
+    return plainToInstance(User, saved);
   }
 
-  findAll() {
-    return this.userRepository.find();
+  async findAll(): Promise<User[]> {
+    const users = await this.userRepository.find({ relations: ['equipe'] });
+    return users.map((user) => plainToInstance(User, user));
   }
 
-  findOne(id: number) {
-    return this.userRepository.findOneBy({ id });
+  async findOne(id: number): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['equipe'],
+    });
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
+    return plainToInstance(User, user);
   }
 
-  findByEmail(email: string) {
-    return this.userRepository.findOneBy({ email });
+  async findByEmail(email: string): Promise<User> {
+    const user = await this.userRepository.findOneBy({ email });
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
+    return user;
   }
 
-  // async update(id: number, userData: Partial<User>) {
-  //   if (userData.password) {
-  //     userData.password = await bcrypt.hash(userData.password, 10);
-  //   }
-  //   await this.userRepository.update(id, userData);
-  //   return this.findOne(id);
-  // }
+  async findByNameOrEmail(identifier: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: [{ email: identifier }, { prenom: identifier }],
+    });
+  }
 
   async update(id: number, data: UpdateUserDto): Promise<User> {
     const user = await this.userRepository.findOneBy({ id });
     if (!user) throw new NotFoundException('Utilisateur introuvable');
+
+    if (typeof data.isActive === 'string') {
+      data.isActive = data.isActive === 'true';
+    }
+
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
+
     Object.assign(user, data);
-    return this.userRepository.save(user);
+    const updated = await this.userRepository.save(user);
+    return plainToInstance(User, updated);
   }
 
-  remove(id: number) {
+  async remove(id: number) {
+    const user = await this.findOne(id);
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
     return this.userRepository.delete(id);
   }
 
@@ -86,13 +110,21 @@ export class UsersService {
     return roleCounts;
   }
 
-async findByNameOrEmail(identifier: string): Promise<User | null> {
-  return this.userRepository.findOne({
-    where: [
-      { email: identifier },
-      { prenom: identifier },
-    ],
-  });
-}
+  async findAvailableMembers(): Promise<User[]> {
+    const membres = await this.userRepository.find({
+      where: {
+        role: UserRole.MEMBRE_EQUIPE,
+        projetActuelId: IsNull(),
+      },
+    });
 
+    return membres.map((m) => plainToInstance(User, m));
+  }
+
+  async toggleActivation(id: number): Promise<User> {
+    const user = await this.findOne(id);
+    user.isActive = !user.isActive;
+    const saved = await this.userRepository.save(user);
+    return plainToInstance(User, saved);
+  }
 }

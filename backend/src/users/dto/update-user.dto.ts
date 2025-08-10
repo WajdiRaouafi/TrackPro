@@ -1,7 +1,6 @@
-import { IsEmail, IsOptional, IsString, IsEnum, IsBoolean } from 'class-validator';
-import { UserRole } from '../users.entity';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { UseInterceptors, UploadedFile } from '@nestjs/common';
+import { IsEmail, IsOptional, IsString, IsEnum, IsBoolean, IsPhoneNumber, IsNumber } from 'class-validator';
+import { UserRole } from '../entities/users.entity';
+
 export class UpdateUserDto {
   @IsOptional()
   @IsString()
@@ -12,7 +11,7 @@ export class UpdateUserDto {
   prenom?: string;
 
   @IsOptional()
-  @IsString()
+  @IsPhoneNumber(undefined, { message: 'Numéro de téléphone invalide' })
   telephone?: string;
 
   @IsOptional()
@@ -24,7 +23,7 @@ export class UpdateUserDto {
   password?: string;
 
   @IsOptional()
-  @IsEnum(UserRole)
+  @IsEnum(UserRole, { message: 'Rôle invalide' })
   role?: UserRole;
 
   @IsOptional()
@@ -34,4 +33,8 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   photoUrl?: string;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Le salaire journalier doit être un nombre' })
+  salaireJournalier?: number;
 }
