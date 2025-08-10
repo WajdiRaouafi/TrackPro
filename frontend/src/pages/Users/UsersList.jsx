@@ -22,9 +22,10 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { getUsers, toggleUserStatus, deleteUser } from "../api/users";
+import { getUsers, toggleUserStatus, deleteUser } from "../../api/users";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Helmet } from "react-helmet";
 
 const formatRole = (role) => {
   switch (role) {
@@ -41,7 +42,7 @@ const formatRole = (role) => {
   }
 };
 
-export default function AdminUserPage() {
+export default function UsersList() {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -150,6 +151,9 @@ export default function AdminUserPage() {
 
   return (
     <Paper sx={{ width: "100%", overflow: "hidden", padding: 2 }}>
+      <Helmet>
+              <title>Liste Utilisateurs - TrackPro</title>
+            </Helmet>
       <Typography variant="h5" gutterBottom>
         👥 Liste des utilisateurs
       </Typography>

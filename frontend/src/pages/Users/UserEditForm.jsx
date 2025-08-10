@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getUserById, updateUser } from "../api/users";
+import { getUserById, updateUser } from "../../api/users";
 import { toast } from "react-toastify";
+import { Helmet } from "react-helmet";
 
 export default function UserEditForm() {
   const { id } = useParams();
@@ -12,28 +13,67 @@ export default function UserEditForm() {
     email: "",
     role: "",
     isActive: true,
+    photo: null,
+    photoUrl: null, // <-- champ pour l'image existante
   });
 
   useEffect(() => {
-    getUserById(id)
-      .then((res) => setUser(res.data))
-      .catch(() => toast.error("Erreur lors du chargement de l'utilisateur"));
+    const fetchUser = async () => {
+      try {
+        const res = await getUserById(id);
+        const userData = res.data;
+
+        setUser({
+          nom: userData.nom || "",
+          prenom: userData.prenom || "",
+          email: userData.email || "",
+          role: userData.role || "",
+          isActive: userData.isActive ?? true,
+          photo: null,
+          photoUrl: userData.photo || null, // <-- conserver la photo existante
+        });
+      } catch (err) {
+        toast.error("Erreur lors du chargement de l'utilisateur");
+      }
+    };
+
+    fetchUser();
   }, [id]);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setUser((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    const { name, value, type, checked, files } = e.target;
+    if (name === "photo") {
+      setUser((prev) => ({
+        ...prev,
+        photo: files[0],
+      }));
+    } else {
+      setUser((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await updateUser(id, user);
+      const formData = new FormData();
+      formData.append("nom", user.nom);
+      formData.append("prenom", user.prenom);
+      formData.append("email", user.email);
+      formData.append("role", user.role);
+      formData.append("isActive", user.isActive ? "true" : "false");
+
+      if (user.photo) {
+        formData.append("photo", user.photo); // nouvelle photo
+      } else if (user.photoUrl) {
+        formData.append("photoUrl", user.photoUrl); // conserver ancienne photo
+      }
+
+      await updateUser(id, formData);
       toast.success("Utilisateur mis à jour ✅");
-      navigate("/admin/users");
+      navigate("/dashboard");
     } catch (err) {
       toast.error("Erreur lors de la mise à jour");
     }
@@ -41,8 +81,11 @@ export default function UserEditForm() {
 
   return (
     <div className="container mt-5" style={{ maxWidth: "600px" }}>
+      <Helmet>
+        <title>Modifier l'utilisateur - TrackPro</title>
+      </Helmet>
       <h3 className="mb-4">Modifier l'utilisateur</h3>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} encType="multipart/form-data">
         <div className="mb-3">
           <label className="form-label">Nom</label>
           <input
@@ -76,6 +119,7 @@ export default function UserEditForm() {
             required
           />
         </div>
+
         <div className="mb-3">
           <label className="form-label">Rôle</label>
           <select
@@ -94,6 +138,7 @@ export default function UserEditForm() {
             </option>
           </select>
         </div>
+
         <div className="form-check mb-3">
           <input
             className="form-check-input"
@@ -107,6 +152,36 @@ export default function UserEditForm() {
             Actif
           </label>
         </div>
+
+        {user.photoUrl && (
+          <div className="mb-3 text-center">
+            <label>Photo actuelle :</label>
+            <br />
+            <img
+              src={`http://localhost:3000${user.photoUrl}`}
+              alt={`Profil de ${user.prenom} ${user.nom}`}
+              style={{
+                width: "120px",
+                height: "120px",
+                borderRadius: "50%",
+                objectFit: "cover",
+                border: "1px solid #ccc",
+              }}
+            />
+          </div>
+        )}
+
+        <div className="mb-3">
+          <label>Changer la photo</label>
+          <input
+            type="file"
+            name="photo"
+            className="form-control"
+            accept="image/*"
+            onChange={handleChange}
+          />
+        </div>
+
         <button type="submit" className="btn btn-primary">
           Enregistrer
         </button>

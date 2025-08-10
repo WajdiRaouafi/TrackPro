@@ -20,6 +20,8 @@ import { useNavigate } from "react-router-dom";
 import ForgotPassword from "./components/ForgotPassword";
 import AppTheme from "../shared-theme/AppTheme";
 import ColorModeSelect from "../shared-theme/ColorModeSelect";
+import { Helmet } from "react-helmet";
+
 // import { SitemarkIcon } from './components/CustomIcons';
 import { login } from "../../api/auth";
 
@@ -89,6 +91,9 @@ export default function SignIn(props) {
 
   return (
     <AppTheme {...props}>
+      <Helmet>
+        <title>Sign In - TrackPro</title>
+      </Helmet>
       <CssBaseline enableColorScheme />
       <SignInContainer direction="column" justifyContent="center">
         <ColorModeSelect

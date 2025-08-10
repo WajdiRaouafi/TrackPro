@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createUser } from "../../api/users";
 import { toast } from "react-toastify";
+import { Helmet } from "react-helmet";
 
 export default function CreateUserForm() {
   const [form, setForm] = useState({
@@ -50,6 +51,9 @@ export default function CreateUserForm() {
 
   return (
     <div className="container mt-4" style={{ maxWidth: "600px" }}>
+      <Helmet>
+        <title>Liste Utilisateurs - TrackPro</title>
+      </Helmet>
       <h3>👤 Créer un utilisateur</h3>
       <form onSubmit={handleSubmit} encType="multipart/form-data">
         {["nom", "prenom", "telephone", "email"].map((field) => (
@@ -87,10 +91,12 @@ export default function CreateUserForm() {
             onChange={handleChange}
             required
           >
-            <option value="ADMIN">ADMIN</option>
-            <option value="CHEF_PROJET">CHEF DE PROJET</option>
-            <option value="MEMBRE_EQUIPE">MEMBRE D'ÉQUIPE</option>
-            <option value="GESTIONNAIRE_RESSOURCES">GESTIONNAIRE DE RESSOURCES</option>
+            <option value="ADMIN">Admin</option>
+            <option value="CHEF_PROJET">Chef de projet</option>
+            <option value="MEMBRE_EQUIPE">Membre d'equipe</option>
+            <option value="GESTIONNAIRE_RESSOURCES">
+              Gestionnaire ressources
+            </option>
           </select>
         </div>
 

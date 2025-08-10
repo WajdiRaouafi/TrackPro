@@ -4,6 +4,7 @@ import { getUsers } from "../api/users";
 import { useNavigate } from "react-router-dom";
 import { Card, Row, Col, Container } from "react-bootstrap";
 import ChatbotWidget from "../components/chatbot/ChatbotWidget";
+import { Helmet } from "react-helmet";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
@@ -53,6 +54,9 @@ export default function Dashboard() {
 
   return (
     <Container className="mt-4">
+      <Helmet>
+        <title>Dashboard - TrackPro</title>
+      </Helmet>
       <h3 className="mb-4">Tableau de bord</h3>
 
       {isAdmin && (

@@ -15,6 +15,8 @@ import AppTheme from "../shared-theme/AppTheme";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { register } from "../../api/auth";
+import { Helmet } from "react-helmet";
+
 // import CustomLogo from './components/CustomLogo'; // remplace SitemarkIcon
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -47,6 +49,7 @@ export default function SignUp(props) {
     telephone: "",
     email: "",
     password: "",
+    salaireJournalier: "",
     role: "CHEF_PROJET",
     photo: null, // 👈 Nouveau champ
   });
@@ -85,6 +88,9 @@ export default function SignUp(props) {
 
   return (
     <AppTheme {...props}>
+      <Helmet>
+        <title>Sign Up - TrackPro</title>
+      </Helmet>
       <CssBaseline />
       <SignUpContainer direction="column" justifyContent="center">
         <Card variant="outlined">
@@ -169,6 +175,20 @@ export default function SignUp(props) {
                 </option>
               </select>
             </FormControl>
+
+            {form.role === "MEMBRE_EQUIPE" && (
+              <FormControl>
+                <FormLabel>Salaire journalier</FormLabel>
+                <TextField
+                  name="salaireJournalier"
+                  type="float"
+                  value={form.salaireJournalier}
+                  onChange={handleChange}
+                  inputProps={{ min: 0, step: 10 }}
+                  required
+                />
+              </FormControl>
+            )}
 
             <FormControl>
               <FormLabel>Photo de profil</FormLabel>

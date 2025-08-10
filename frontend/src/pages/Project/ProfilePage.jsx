@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { updateOwnProfile } from "../../api/users";
 import { getCurrentUserFromAPI } from "../../api/auth";
 import { toast } from "react-toastify";
+import { Helmet } from "react-helmet";
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
@@ -52,6 +53,9 @@ export default function ProfilePage() {
 
   return (
     <div className="container mt-4">
+      <Helmet>
+        <title>Liste Utilisateurs - TrackPro</title>
+      </Helmet>
       <h3 className="mb-4">👤 Mon Profil</h3>
 
       {!edit ? (

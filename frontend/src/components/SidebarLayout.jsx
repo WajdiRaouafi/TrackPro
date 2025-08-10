@@ -7,7 +7,8 @@ import MagicIcon from "@rsuite/icons/legacy/Magic";
 import GearCircleIcon from "@rsuite/icons/legacy/GearCircle";
 import SignOutIcon from "@rsuite/icons/legacy/SignOut";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:3000";
+const BACKEND_URL =
+  process.env.REACT_APP_BACKEND_URL || "http://localhost:3000";
 
 export default function SidebarLayout() {
   const [expanded, setExpanded] = useState(true);
@@ -30,7 +31,7 @@ export default function SidebarLayout() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("email");
-    localStorage.removeItem('chatbot_messages'); // ✅ supprime l’historique du chatbot
+    localStorage.removeItem("chatbot_messages"); // ✅ supprime l’historique du chatbot
     navigate("/login");
   };
 
@@ -123,6 +124,31 @@ export default function SidebarLayout() {
                 <Nav.Item eventKey="/projects/new">Nouveau projet</Nav.Item>
               </Nav.Menu>
 
+              <Nav.Menu
+                eventKey="equipements"
+                title="Equipements"
+                icon={<MagicIcon />}
+              >
+                <Nav.Item eventKey="/equipements">
+                  Tous les equipements
+                </Nav.Item>
+                <Nav.Item eventKey="/equipements/new">
+                  Nouveau equipement
+                </Nav.Item>
+              </Nav.Menu>
+
+              <Nav.Menu
+                eventKey="materiau"
+                title="Materiaux"
+                icon={<MagicIcon />}
+              >
+                <Nav.Item eventKey="/materiau">
+                  Tous les materiaux
+                </Nav.Item>
+                <Nav.Item eventKey="/materiau/new">
+                  Nouveau materiau
+                </Nav.Item>
+              </Nav.Menu>
               <Nav.Menu
                 eventKey="settings"
                 title="Paramètres"

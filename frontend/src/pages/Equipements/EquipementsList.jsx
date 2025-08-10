@@ -23,104 +23,128 @@ import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Helmet } from "react-helmet";
-import { getProjects, deleteProject } from "../../api/projects";
+import { getAllEquipements, deleteEquipement } from "../../api/equipements";
 
-const formatEtatProjet = (etat) => {
-  switch (etat) {
-    case "EN_ATTENTE":
-      return "En attente";
-    case "EN_COURS":
-      return "En cours";
-    case "TERMINE":
-      return "Terminé";
+const formatStatutLabel = (statut) => {
+  switch (statut) {
+    case "DISPONIBLE":
+      return "Disponible";
+    case "EN_PANNE":
+      return "En panne";
+    case "EN_UTILISATION":
+      return "En utilisation";
+    case "MAINTENANCE":
+      return "Maintenance";
     default:
-      return etat;
+      return statut;
   }
 };
 
-export default function ProjectList() {
-  const [projects, setProjects] = useState([]);
+const formatStatutColor = (statut) => {
+  switch (statut) {
+    case "Disponible":
+      return "success";
+    case "En panne":
+      return "error";
+    case "En utilisation":
+      return "warning";
+    case "Maintenance":
+      return "info";
+    default:
+      return "default";
+  }
+};
+
+export default function EquipementList() {
+  const [equipements, setEquipements] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [projectToDelete, setProjectToDelete] = useState(null);
+  const [equipementToDelete, setEquipementToDelete] = useState(null);
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const navigate = useNavigate();
 
-  const filteredProjects = projects.filter((proj) =>
-    proj?.nom?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEquipements = equipements.filter((e) =>
+    e?.nom?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {
-    loadProjects();
+    loadEquipements();
   }, []);
 
-  const loadProjects = async () => {
+  const loadEquipements = async () => {
     try {
-      const res = await getProjects();
-      console.log("👉 Réponse backend:", res.data); // 👈 Ajoute ceci
-      setProjects(res.data);
+      const res = await getAllEquipements();
+      setEquipements(res.data);
     } catch (err) {
       console.error(err);
-      toast.error("❌ Erreur lors du chargement des projets.");
+      toast.error("❌ Erreur lors du chargement des équipements.");
     }
   };
 
-  const handleEdit = (id) => navigate(`/projects/edit/${id}`);
+  const handleEdit = (id) => navigate(`/equipements/edit/${id}`);
 
-  const confirmDeleteProject = (project) => {
-    setProjectToDelete(project);
+  const confirmDeleteEquipement = (equipement) => {
+    setEquipementToDelete(equipement);
     setOpenConfirmDialog(true);
   };
 
   const handleDeleteConfirmed = async () => {
     try {
-      await deleteProject(projectToDelete.id);
-      toast.success("✅ Projet supprimé !");
-      loadProjects();
+      await deleteEquipement(equipementToDelete.id);
+      toast.success("✅ Équipement supprimé !");
+      loadEquipements();
     } catch {
       toast.error("❌ Erreur lors de la suppression");
     } finally {
       setOpenConfirmDialog(false);
-      setProjectToDelete(null);
+      setEquipementToDelete(null);
     }
   };
 
   const exportToExcel = () => {
-    const data = filteredProjects.map((p) => ({
-      Nom: p.nom,
-      ChefDeProjet: `${p.chefProjet?.nom || ""} ${p.chefProjet?.prenom || ""}`,
-      État: p.etat,
-      Budget: p.budget,
+    const data = filteredEquipements.map((e) => ({
+      Nom: e.nom,
+      Type: e.type,
+      "Numéro de Série": e.numeroSerie,
+      Statut: formatStatutLabel(e.statut),
+      Stock: e.stock,
+      "Seuil d'Alerte": e.seuil,
+      "Coût/Jour": e.coutParJour,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Projets");
-    XLSX.writeFile(workbook, "projets.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Équipements");
+    XLSX.writeFile(workbook, "equipements.xlsx");
   };
 
   const exportToPDF = () => {
     const doc = new jsPDF();
     autoTable(doc, {
-      head: [["Nom", "Chef de projet", "État", "Budget"]],
-      body: filteredProjects.map((p) => [
-        p.nom,
-        `${p.chefProjet?.nom || ""} ${p.chefProjet?.prenom || ""}`,
-        p.etat,
-        p.budget,
+      head: [
+        ["Nom", "Type", "N° Série", "Statut", "Stock", "Seuil", "Coût/Jour"],
+      ],
+      body: filteredEquipements.map((e) => [
+        e.nom,
+        e.type,
+        e.numeroSerie,
+        formatStatutLabel(e.statut),
+        e.stock,
+        e.seuil,
+        e.coutParJour,
       ]),
     });
-    doc.save("projets.pdf");
+    doc.save("equipements.pdf");
   };
 
   return (
     <Paper sx={{ width: "100%", overflow: "hidden", padding: 2 }}>
       <Helmet>
-        <title>Liste Projets - TrackPro</title>
+        <title>Liste Équipements - TrackPro</title>
       </Helmet>
       <Typography variant="h5" gutterBottom>
-        🏗️ Liste des projets
+        🛠️ Liste des équipements
       </Typography>
 
       <Box display="flex" justifyContent="flex-end" alignItems="center" mb={2}>
@@ -146,55 +170,59 @@ export default function ProjectList() {
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: "bold" }}>Nom</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Chef de projet</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>État</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Budget ($)</TableCell>
-              <TableCell align="center" sx={{ fontWeight: "bold" }}>
-                Actions
-              </TableCell>
+              <TableCell>Nom</TableCell>
+              <TableCell>Type</TableCell>
+              <TableCell>Numéro Série</TableCell>
+              <TableCell>Statut</TableCell>
+              <TableCell>Stock</TableCell>
+              <TableCell>Seuil</TableCell>
+              <TableCell>Coût/Jour</TableCell>
+              <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredProjects.length === 0 ? (
+            {filteredEquipements.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">
-                  Aucun projet trouvé.
+                <TableCell colSpan={8} align="center">
+                  Aucun équipement trouvé.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredProjects
+              filteredEquipements
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((proj) => (
-                  <TableRow key={proj?.id || Math.random()} hover>
-                    <TableCell>{proj?.nom || "—"}</TableCell>
-                    <TableCell>
-                      {proj?.chefProjet?.nom || ""}{" "}
-                      {proj?.chefProjet?.prenom || ""}
+                .map((e) => (
+                  <TableRow key={e.id} hover>
+                    <TableCell
+                      style={{
+                        cursor: "pointer",
+                        color: "#1976d2",
+                        textDecoration: "underline",
+                      }}
+                      onClick={() => navigate(`/equipements/${e.id}`)}
+                    >
+                      {e.nom}
                     </TableCell>
+                    <TableCell>{e.type}</TableCell>
+                    <TableCell>{e.numeroSerie}</TableCell>
                     <TableCell>
                       <Chip
-                        label={formatEtatProjet(proj?.etat)}
-                        color={
-                          proj?.etat === "EN_ATTENTE"
-                            ? "default"
-                            : proj?.etat === "EN_COURS"
-                            ? "warning"
-                            : "success"
-                        }
+                        label={formatStatutLabel(e.statut)}
+                        color={formatStatutColor(e.statut)}
                         size="small"
                       />
                     </TableCell>
-                    <TableCell>{proj?.budget ?? "—"}</TableCell>
+                    <TableCell>{e.stock}</TableCell>
+                    <TableCell>{e.seuil}</TableCell>
+                    <TableCell>{e.coutParJour}</TableCell>
                     <TableCell align="center">
                       <IconButton
-                        onClick={() => handleEdit(proj.id)}
+                        onClick={() => handleEdit(e.id)}
                         color="warning"
                       >
                         <FaEdit />
                       </IconButton>
                       <IconButton
-                        onClick={() => confirmDeleteProject(proj)}
+                        onClick={() => confirmDeleteEquipement(e)}
                         color="error"
                       >
                         <FaTrash />
@@ -209,7 +237,7 @@ export default function ProjectList() {
 
       <TablePagination
         component="div"
-        count={filteredProjects.length}
+        count={filteredEquipements.length}
         page={page}
         onPageChange={(e, newPage) => setPage(newPage)}
         rowsPerPage={rowsPerPage}
@@ -230,7 +258,7 @@ export default function ProjectList() {
           </Typography>
           <Typography mb={2}>
             Êtes-vous sûr de vouloir supprimer{" "}
-            <strong>{projectToDelete?.nom}</strong> ?
+            <strong>{equipementToDelete?.nom}</strong> ?
           </Typography>
           <Box display="flex" justifyContent="flex-end" gap={1}>
             <Button onClick={() => setOpenConfirmDialog(false)}>Annuler</Button>
