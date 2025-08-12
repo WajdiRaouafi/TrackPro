@@ -1,3 +1,4 @@
+// src/materiaux/materiau.service.ts
 import {
   Injectable,
   NotFoundException,
@@ -10,7 +11,8 @@ import { CreateMateriauDto } from './dto/create-materiau.dto';
 import { UpdateMateriauDto } from './dto/update-materiau.dto';
 import { Project } from 'src/projects/entities/projects.entity';
 import { Fournisseur } from 'src/fournisseur/entities/fournisseur.entity';
-import { MailerService } from '@nestjs-modules/mailer';
+// ❌ Emails désactivés (dry-run) :
+// import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class MateriauService {
@@ -26,7 +28,8 @@ export class MateriauService {
     @InjectRepository(Fournisseur)
     private readonly fournisseurRepo: Repository<Fournisseur>,
 
-    private readonly mailer: MailerService,
+    // ❌ Emails désactivés (dry-run) :
+    // private readonly mailer: MailerService,
   ) {}
 
   // ✅ Créer un matériau (projet/fournisseur optionnels)
@@ -109,10 +112,9 @@ export class MateriauService {
     await this.materiauRepo.remove(materiau);
   }
 
-  // ✅ Commande auto si stock < seuil et commande non envoyée
+  // ✅ Commande auto si stock < seuil et commande non envoyée (DRY-RUN sans email)
   // Renvoie { commandesEnvoyees: number }
   async verifierEtCommanderSiNecessaire(): Promise<{ commandesEnvoyees: number }> {
-    // On a besoin du fournisseur et projet pour l'email
     const materiaux = await this.materiauRepo.find({
       where: { commandeEnvoyee: false },
       relations: ['fournisseur', 'projet'],
@@ -125,13 +127,24 @@ export class MateriauService {
       const seuil = Number(m.seuil ?? 0);
 
       if (stock < seuil && m.fournisseur?.email) {
+        // 🔎 DRY-RUN: on log ce qu'on ferait au lieu d'envoyer un email
+        this.logger.log(
+          `(DRY-RUN) Envoi email -> ${m.fournisseur.email} | Matériau: ${m.nom} | Stock: ${m.stock} < Seuil: ${m.seuil}`,
+        );
+
+        // Simuler la réussite et éviter les doublons lors des prochains runs
+        m.commandeEnvoyee = true;
+        await this.materiauRepo.save(m);
+        count += 1;
+
+        // ✅ Pour réactiver l'email plus tard, décommente le bloc suivant
+        /*
         try {
           await this.mailer.sendMail({
             to: m.fournisseur.email,
             subject: `Commande automatique – ${m.nom}`,
             html: this.buildCommandeHtml(m),
           });
-
           m.commandeEnvoyee = true;
           await this.materiauRepo.save(m);
           count += 1;
@@ -139,14 +152,15 @@ export class MateriauService {
           this.logger.error(
             `Échec envoi email fournisseur(${m.fournisseur.email}) pour matériau ${m.id}: ${err?.message || err}`,
           );
-          // On ne marque PAS comme envoyé si l'email échoue
         }
+        */
       }
     }
 
     return { commandesEnvoyees: count };
   }
 
+  // (Optionnel) Utilisé seulement quand tu réactiveras les emails
   private buildCommandeHtml(m: Materiau) {
     const appro = m.dateProchainApprovisionnement
       ? new Date(m.dateProchainApprovisionnement).toISOString().slice(0, 10)
@@ -161,7 +175,7 @@ export class MateriauService {
           <li><strong>Matériau :</strong> ${m.nom} (${m.type})</li>
           <li><strong>Stock actuel :</strong> ${m.stock}</li>
           <li><strong>Seuil minimum :</strong> ${m.seuil}</li>
-          <li><strong>Coût unitaire estimé :</strong> ${m.coutUnitaire ?? '-' } $</li>
+          <li><strong>Coût unitaire estimé :</strong> ${m.coutUnitaire ?? '-'} $</li>
           <li><strong>Projet :</strong> ${projet}</li>
           <li><strong>Prochain approvisionnement souhaité :</strong> ${appro}</li>
         </ul>

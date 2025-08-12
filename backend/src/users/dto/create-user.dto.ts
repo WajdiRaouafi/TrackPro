@@ -12,7 +12,7 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsPhoneNumber(undefined, { message: 'Numéro de téléphone invalide' })
-  telephone: string;
+  telephone: number;
 
   @IsNotEmpty()
   @IsEmail()

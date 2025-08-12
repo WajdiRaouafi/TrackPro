@@ -1,3 +1,4 @@
+// users.controller.ts
 import {
   Controller,
   Get,
@@ -15,12 +16,67 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
+import * as fs from 'fs';
 import { plainToInstance } from 'class-transformer';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { User } from './entities/users.entity';
+
+// === Dossiers d'upload unifiés ===
+const UPLOADS_ROOT = join(process.cwd(), 'uploads');
+const PROFILE_DIR = join(UPLOADS_ROOT, 'profile');
+// Créer les dossiers si absents
+fs.mkdirSync(PROFILE_DIR, { recursive: true });
+
+// Générateur de nom de fichier
+function makeFilename(original: string) {
+  const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+  const ext = extname(original || '') || '.png';
+  return `photo-${unique}${ext}`;
+}
+
+// Config Multer commune
+const multerProfileConfig = {
+  storage: diskStorage({
+    destination: PROFILE_DIR,
+    filename: (req, file, cb) => cb(null, makeFilename(file.originalname)),
+  }),
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new BadRequestException('Type de fichier non autorisé'), false);
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+};
+
+// Petite fonction de nettoyage des champs côté controller
+function sanitizeBody(body: any) {
+  const sanitized: any = { ...body };
+
+  // Ne jamais envoyer '' vers une colonne DECIMAL (Postgres n'aime pas)
+  if (sanitized.role !== 'MEMBRE_EQUIPE') {
+    delete sanitized.salaireJournalier;
+  } else if (sanitized.salaireJournalier === '') {
+    delete sanitized.salaireJournalier;
+  }
+
+  // Si photoUrl est '', on n’écrase pas la valeur existante
+  if (sanitized.photoUrl === '') {
+    delete sanitized.photoUrl;
+  }
+
+  // Normaliser isActive (string -> boolean)
+  if (typeof sanitized.isActive === 'string') {
+    sanitized.isActive =
+      sanitized.isActive === 'true' || sanitized.isActive === '1';
+  }
+
+  return sanitized;
+}
 
 @Controller('users')
 export class UsersController {
@@ -28,30 +84,13 @@ export class UsersController {
 
   // ✅ Créer un utilisateur avec photo
   @Post()
-  @UseInterceptors(
-    FileInterceptor('photo', {
-      storage: diskStorage({
-        destination: './uploads/profile',
-        filename: (req, file, cb) => {
-          const uniqueName = `photo-${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
-          cb(null, uniqueName);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!allowedTypes.includes(file.mimetype)) {
-          return cb(new BadRequestException('Type de fichier non autorisé'), false);
-        }
-        cb(null, true);
-      },
-      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
-    }),
-  )
+  @UseInterceptors(FileInterceptor('photo', multerProfileConfig))
   async create(@UploadedFile() file: Express.Multer.File, @Body() body: any) {
-    const data = {
-      ...body,
-      photoUrl: file ? `/uploads/profile/${file.filename}` : undefined,
-    };
+    const data = sanitizeBody(body);
+    if (file) {
+      // On stocke l'URL web (pas un chemin disque)
+      data.photoUrl = `/uploads/profile/${file.filename}`;
+    }
     const user = await this.usersService.create(data);
     return plainToInstance(User, user);
   }
@@ -70,36 +109,18 @@ export class UsersController {
     return plainToInstance(User, user);
   }
 
-  // ✅ Mettre à jour un utilisateur par ID
+  // ✅ Mettre à jour un utilisateur par ID (avec photo optionnelle)
   @Patch(':id')
-  @UseInterceptors(
-    FileInterceptor('photo', {
-      storage: diskStorage({
-        destination: './uploads/profile',
-        filename: (req, file, cb) => {
-          const uniqueName = `photo-${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
-          cb(null, uniqueName);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!allowedTypes.includes(file.mimetype)) {
-          return cb(new BadRequestException('Type de fichier non autorisé'), false);
-        }
-        cb(null, true);
-      },
-      limits: { fileSize: 2 * 1024 * 1024 },
-    }),
-  )
+  @UseInterceptors(FileInterceptor('photo', multerProfileConfig))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: Express.Multer.File,
     @Body() body: UpdateUserDto,
   ) {
-    const data = {
-      ...body,
-      photoUrl: file ? `/uploads/profile/${file.filename}` : body.photoUrl,
-    };
+    const data: any = sanitizeBody(body);
+    if (file) {
+      data.photoUrl = `/uploads/profile/${file.filename}`;
+    }
     const updated = await this.usersService.update(id, data);
     return plainToInstance(User, updated);
   }
@@ -110,40 +131,22 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
-  // ✅ Mettre à jour son propre profil
+  // ✅ Mettre à jour son propre profil (sans forcer des champs sensibles)
   @UseGuards(JwtAuthGuard)
   @Patch('me')
   async updateOwnProfile(@Request() req, @Body() data: Partial<User>) {
-    const allowedFields = ['nom', 'prenom', 'telephone', 'photoUrl'];
+    const allowed = ['nom', 'prenom', 'telephone', 'photoUrl'];
     const filtered = Object.fromEntries(
-      Object.entries(data).filter(([key]) => allowedFields.includes(key)),
+      Object.entries(data).filter(([k]) => allowed.includes(k)),
     );
     const updated = await this.usersService.update(req.user.id, filtered);
     return plainToInstance(User, updated);
   }
 
-  // ✅ Upload de la photo seule
+  // ✅ Upload de la photo seule (si tu veux un endpoint dédié)
   @UseGuards(JwtAuthGuard)
   @Post('upload')
-  @UseInterceptors(
-    FileInterceptor('photo', {
-      storage: diskStorage({
-        destination: './uploads/profile',
-        filename: (req, file, cb) => {
-          const uniqueName = `photo-${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
-          cb(null, uniqueName);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!allowedTypes.includes(file.mimetype)) {
-          return cb(new BadRequestException('Type de fichier non autorisé'), false);
-        }
-        cb(null, true);
-      },
-      limits: { fileSize: 2 * 1024 * 1024 },
-    }),
-  )
+  @UseInterceptors(FileInterceptor('photo', multerProfileConfig))
   async uploadPhoto(@UploadedFile() file: Express.Multer.File, @Request() req) {
     if (!file) throw new BadRequestException('Aucun fichier reçu.');
     const photoUrl = `/uploads/profile/${file.filename}`;
@@ -155,7 +158,7 @@ export class UsersController {
     };
   }
 
-  // ✅ Récupérer les membres disponibles
+  // ✅ Membres disponibles (si présent côté service)
   @Get('disponibles')
   async findAvailable() {
     const users = await this.usersService.findAvailableMembers();

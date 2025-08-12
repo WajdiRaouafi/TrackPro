@@ -13,7 +13,7 @@ import { CreateMateriauDto } from './dto/create-materiau.dto';
 import { UpdateMateriauDto } from './dto/update-materiau.dto';
 import { Materiau } from './entities/materiau.entity';
 
-@Controller('materiaux')
+@Controller('materiau')
 export class MateriauController {
   constructor(private readonly materiauService: MateriauService) {}
 

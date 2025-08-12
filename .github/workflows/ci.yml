@@ -94,7 +94,6 @@
 #       - name: 🧱 Build all services (backend, frontend, db)
 #         run: docker compose build
 
-
 # name: 🔁 CI/CD Pipeline
 
 # on:
@@ -213,4 +212,3 @@ jobs:
       - name: 🚀 Push frontend image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/trackpro-frontend:latest
-
