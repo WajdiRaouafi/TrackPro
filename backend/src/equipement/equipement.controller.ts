@@ -8,9 +8,10 @@ import {
   Delete,
   NotFoundException,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { EquipementService } from './equipement.service';
-import { CreateEquipementDto } from './dto/create-equipement.dto';
+  import { CreateEquipementDto } from './dto/create-equipement.dto';
 import { UpdateEquipementDto } from './dto/update-equipement.dto';
 import { Equipement } from './entities/equipement.entity';
 
@@ -30,7 +31,37 @@ export class EquipementController {
     return this.equipementService.findAll();
   }
 
-  // ✅ Récupérer un équipement par ID
+  // ✅ Notifications (stock bas + approvisionnement bientôt)
+  // GET /equipements/notifications?days=7
+  @Get('notifications')
+  getNotifications(@Query('days') days?: string) {
+    const n = days ? parseInt(days, 10) : 7;
+    return this.equipementService.getNotifications(Number.isFinite(n) ? n : 7);
+  }
+
+  // ✅ Équipements en alerte de stock
+  @Get('alertes/stock')
+  findEquipementsEnAlerte(): Promise<Equipement[]> {
+    return this.equipementService.findEquipementsEnAlerte();
+  }
+
+  // ✅ Approvisionnement bientôt (optionnel)
+  // GET /equipements/alertes/approvisionnement?days=7
+  @Get('alertes/approvisionnement')
+  findEquipementsApprovisionnementProche(@Query('days') days?: string) {
+    const n = days ? parseInt(days, 10) : 7;
+    return this.equipementService.findEquipementsApprovisionnementProche(
+      Number.isFinite(n) ? n : 7,
+    );
+  }
+
+  // ✅ Statistique : coût total d’utilisation
+  @Get('statistiques/couts')
+  calculerCoutTotal(): Promise<{ total: number }> {
+    return this.equipementService.calculerCoutTotal();
+  }
+
+  // ✅ Récupérer un équipement par ID (laisser APRÈS les routes statiques)
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Equipement> {
     const equipement = await this.equipementService.findOne(id);
@@ -53,21 +84,5 @@ export class EquipementController {
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.equipementService.remove(id);
-  }
-
-  // ✅ Équipements nécessitant réapprovisionnement
-  @Get('alertes/stock')
-  findEquipementsEnAlerte(): Promise<Equipement[]> {
-    return this.equipementService.findEquipementsEnAlerte();
-  }
-
-  // ✅ Statistique : Coût d’utilisation total de tous les équipements
-  @Get('statistiques/couts')
-  calculerCoutTotal(): Promise<{ total: number }> {
-    return this.equipementService.calculerCoutTotal();
-  }
-  @Get('notifications')
-  getNotifications() {
-    return this.equipementService.getNotifications();
   }
 }

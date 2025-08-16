@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+// src/equipements/entities/equipement.entity.ts
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Project } from 'src/projects/entities/projects.entity';
 
 export enum StatutEquipement {
@@ -44,10 +52,15 @@ export class Equipement {
   @Column({ type: 'int', default: 0 })
   joursUtilisation: number;
 
-@ManyToOne(() => Project, (project) => project.equipements, {
-  onDelete: 'CASCADE',
-  nullable: true,
-})
-projet: Project;
+  @ManyToOne(() => Project, (project) => project.equipements, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
+  projet: Project;
 
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

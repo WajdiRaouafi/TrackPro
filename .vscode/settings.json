@@ -1,0 +1,7 @@
+// .vscode/settings.json
+{
+  "css.validate": false,
+  "scss.validate": false,
+  "less.validate": false,
+  "tailwindCSS.languageMode": "postcss"
+}
